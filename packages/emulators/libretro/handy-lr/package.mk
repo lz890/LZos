@@ -19,7 +19,7 @@
 ################################################################################
 
 PKG_NAME="handy-lr"
-PKG_VERSION="65d6b865544cd441ef2bd18cde7bd834c23d0e48"
+PKG_VERSION="fca239207e9c111da3e85d2faf0b1b9d7524e498"
 PKG_REV="1"
 PKG_ARCH="any"
 PKG_LICENSE="Zlib"

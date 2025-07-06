@@ -1,43 +1,46 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
-# Copyright (C) 2020 Trond Haugland (trondah@gmail.com)
-# Copyright (C) 2023 JELOS (https://github.com/JustEnoughLinuxOS)
+# Copyright (C) 2021-present Shanti Gilbert (https://github.com/shantigilbert)
 
 PKG_NAME="pcsx_rearmed-lr"
-PKG_VERSION="9aefd427e47e1cdf94578e1913054bc14a44bab6"
-PKG_ARCH="arm aarch64"
+PKG_VERSION="6365a756c02d25c76bf90c78e42316b46f876c49"
+PKG_REV="1"
+PKG_ARCH="any"
 PKG_LICENSE="GPLv2"
 PKG_SITE="https://github.com/libretro/pcsx_rearmed"
 PKG_URL="${PKG_SITE}/archive/${PKG_VERSION}.tar.gz"
-PKG_DEPENDS_TARGET="toolchain"
+PKG_DEPENDS_TARGET="toolchain alsa"
 PKG_SHORTDESC="ARM optimized PCSX fork"
-PKG_TOOLCHAIN="manual"
-
-pre_configure_target() {
-  sed -i 's/\-O[23]/-Ofast/' ${PKG_BUILD}/Makefile
-}
+PKG_TOOLCHAIN="make"
+PKG_BUILD_FLAGS="+speed -gold"
 
 make_target() {
-  cd ${PKG_BUILD}
-  make -f Makefile.libretro GIT_VERSION=${PKG_VERSION} platform=${DEVICE}
-}
-
-makeinstall_target32() {
-  case ${ARCH} in
-    aarch64)
-      if [ "${ENABLE_32BIT}" == "true" ]
-      then
-        cp -vP ${ROOT}/build.${DISTRO}-${DEVICE}.arm/${PKG_NAME}-*/.install_pkg/usr/lib/libretro/${1}_libretro.so ${INSTALL}/usr/lib/libretro/${1}32_libretro.so
-      fi
-    ;;
-  esac
+cd ${PKG_BUILD}
+export ALLOW_LIGHTREC_ON_ARM=1
+if [ "${ARCH}" == "arm" ]; then
+	if [ "${DEVICE}" == "Amlogic-old" ]; then
+		make -f Makefile.libretro GIT_VERSION=${PKG_VERSION} platform=rpi3
+	else
+		make -f Makefile.libretro GIT_VERSION=${PKG_VERSION} platform=rpi4
+	fi
+else
+	if [ "${DEVICE}" == "Amlogic-old" ]; then
+		make -f Makefile.libretro GIT_VERSION=${PKG_VERSION} platform=h5
+	elif [ "${DEVICE}" == "OdroidGoAdvance" ] || [ "${DEVICE}" == "Gameforce" ]; then
+		sed -i "s|cortex-a53|cortex-a35|g" Makefile.libretro
+		make -f Makefile.libretro GIT_VERSION=${PKG_VERSION} platform=h5
+	else
+		make -f Makefile.libretro GIT_VERSION=${PKG_VERSION} platform=CortexA73_G12B
+	fi
+fi
 }
 
 makeinstall_target() {
-  mkdir -p ${INSTALL}/usr/lib/libretro
-  cp pcsx_rearmed_libretro.so ${INSTALL}/usr/lib/libretro/
-  case ${TARGET_ARCH} in
-    aarch64)
-      makeinstall_target32 pcsx_rearmed
-    ;;
-  esac
+INSTALLTO="/usr/lib/libretro"
+mkdir -p ${INSTALL}${INSTALLTO}/
+
+if [ "${ARCH}" == "arm" ]; then
+    cp pcsx_rearmed_libretro.so ${INSTALL}${INSTALLTO}/pcsx_rearmed_32b_libretro.so
+else
+    cp pcsx_rearmed_libretro.so ${INSTALL}${INSTALLTO}
+fi
 }
